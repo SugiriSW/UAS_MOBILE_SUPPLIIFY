@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/splash/splash_screen.dart';
+import 'provider/cart_provider.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(const MyApp());

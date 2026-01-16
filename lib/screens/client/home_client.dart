@@ -1,364 +1,191 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:provider/provider.dart';
+
+import '../../models/product_model.dart';
+import '../../provider/cart_provider.dart';
+import '../../services/category_service.dart';
+import '../../services/product_service.dart';
+
+// ===== WARNA =====
+const Color primaryBlue = Color(0xFF0A2540);
+const Color teal = Color(0xFF2EC4B6);
+const Color background = Color(0xFFF7F5FF);
 
 class HomeClient extends StatefulWidget {
   const HomeClient({super.key});
 
   @override
-  _HomeClientState createState() => _HomeClientState();
+  State<HomeClient> createState() => _HomeClientState();
 }
 
 class _HomeClientState extends State<HomeClient> {
-  List<Category> categories = [];
+  List categories = [];
+  List<Product> products = [];
   bool isLoading = true;
-  String baseUrl = "http://10.0.2.2/UAS_MOBILE";
 
   @override
   void initState() {
     super.initState();
-    fetchCategories();
+    loadData();
   }
 
-  Future<void> fetchCategories() async {
+  Future<void> loadData() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/categories'));
-      
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        setState(() {
-          categories = List<Category>.from(
-            data['data'].map((x) => Category.fromJson(x))
-          );
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load categories');
-      }
-    } catch (e) {
-      print('Error: $e');
+      final cat = await CategoryService.getCategories();
+      final prod = await ProductService.getProducts();
+
       setState(() {
+        categories = cat;
+        products = prod;
         isLoading = false;
       });
+    } catch (e) {
+      setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat kategori: $e')),
+        const SnackBar(content: Text('Gagal memuat data')),
       );
-    }
-  }
-
-  // Map icon berdasarkan nama kategori
-  IconData getCategoryIcon(String categoryName) {
-    switch (categoryName.toLowerCase()) {
-      case 'makanan':
-        return Icons.fastfood;
-      case 'minuman':
-        return Icons.local_drink;
-      case 'sembako':
-        return Icons.shopping_basket;
-      case 'kebutuhan ibu dan anak':
-      case 'ibu & anak':
-        return Icons.child_care;
-      case 'kebutuhan rumah tangga':
-      case 'rumah tangga':
-        return Icons.cleaning_services;
-      default:
-        return Icons.category;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: background,
+
+      // ================= APP BAR =================
       appBar: AppBar(
-        title: const Text('Distributor App'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(
+          'Distributor App',
+          style: TextStyle(
+            color: primaryBlue,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: const Icon(Icons.shopping_cart, color: primaryBlue),
+            onPressed: () {
+              Navigator.pushNamed(context, '/cart');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: primaryBlue),
             onPressed: () {
               Navigator.pushReplacementNamed(context, '/login');
             },
-          )
+          ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Selamat datang, Client 👋',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            if (isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (categories.isEmpty)
-              const Center(child: Text('Tidak ada kategori tersedia'))
-            else
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 12,
-                    crossAxisSpacing: 12,
-                    childAspectRatio: 1.0,
-                  ),
-                  itemCount: categories.length,
-                  itemBuilder: (context, index) {
-                    return CategoryCard(
-                      category: categories[index],
-                      onTap: () {
-                        // Navigasi ke halaman produk berdasarkan kategori
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProductPage(
-                              categoryId: categories[index].id,
-                              categoryName: categories[index].name,
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
-class CategoryCard extends StatelessWidget {
-  final Category category;
-  final VoidCallback onTap;
-
-  const CategoryCard({
-    required this.category,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 3,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              getCategoryIcon(category.name), // Fungsi untuk mapping icon
-              size: 40,
-              color: Theme.of(context).primaryColor,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              category.name,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData getCategoryIcon(String categoryName) {
-    switch (categoryName.toLowerCase()) {
-      case 'makanan':
-        return Icons.fastfood;
-      case 'minuman':
-        return Icons.local_drink;
-      case 'sembako':
-        return Icons.shopping_basket;
-      case 'kebutuhan ibu dan anak':
-      case 'ibu & anak':
-        return Icons.child_care;
-      case 'kebutuhan rumah tangga':
-      case 'rumah tangga':
-        return Icons.cleaning_services;
-      default:
-        return Icons.category;
-    }
-  }
-}
-
-// Model untuk Kategori
-class Category {
-  final int id;
-  final String name;
-  final String createdAt;
-
-  Category({
-    required this.id,
-    required this.name,
-    required this.createdAt,
-  });
-
-  factory Category.fromJson(Map<String, dynamic> json) {
-    return Category(
-      id: json['id'],
-      name: json['name'],
-      createdAt: json['created_at'],
-    );
-  }
-}
-
-// Model untuk Produk
-class Product {
-  final int id;
-  final int categoryId;
-  final String categoryName;
-  final String name;
-  final String description;
-  final double price;
-  final int stock;
-  final String? photo;
-  final String createdAt;
-
-  Product({
-    required this.id,
-    required this.categoryId,
-    required this.categoryName,
-    required this.name,
-    required this.description,
-    required this.price,
-    required this.stock,
-    this.photo,
-    required this.createdAt,
-  });
-
-  factory Product.fromJson(Map<String, dynamic> json) {
-    return Product(
-      id: json['id'],
-      categoryId: json['category_id'],
-      categoryName: json['category_name'] ?? '',
-      name: json['name'],
-      description: json['description'] ?? '',
-      price: double.parse(json['price'].toString()),
-      stock: json['stock'],
-      photo: json['photo'],
-      createdAt: json['created_at'],
-    );
-  }
-}
-
-// Halaman Produk berdasarkan Kategori
-class ProductPage extends StatefulWidget {
-  final int categoryId;
-  final String categoryName;
-
-  const ProductPage({
-    required this.categoryId,
-    required this.categoryName,
-  });
-
-  @override
-  _ProductPageState createState() => _ProductPageState();
-}
-
-class _ProductPageState extends State<ProductPage> {
-  List<Product> products = [];
-  bool isLoading = true;
-  String baseUrl = "http://your-domain.com/api"; // Ganti dengan URL API Anda
-
-  @override
-  void initState() {
-    super.initState();
-    fetchProducts();
-  }
-
-  Future<void> fetchProducts() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/products?category_id=${widget.categoryId}'),
-      );
-      
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> data = json.decode(response.body);
-        setState(() {
-          products = List<Product>.from(
-            data['data'].map((x) => Product.fromJson(x))
-          );
-          isLoading = false;
-        });
-      } else {
-        throw Exception('Failed to load products');
-      }
-    } catch (e) {
-      print('Error: $e');
-      setState(() {
-        isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memuat produk: $e')),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.categoryName),
-      ),
+      // ================= BODY =================
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : products.isEmpty
-              ? const Center(child: Text('Tidak ada produk tersedia'))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                    final product = products[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: product.photo != null
-                            ? Image.network(
-                                product.photo!,
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                              )
-                            : const Icon(Icons.image, size: 50),
-                        title: Text(product.name),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(product.description),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Rp ${product.price.toStringAsFixed(2)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                            Text('Stok: ${product.stock}'),
-                          ],
-                        ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.add_shopping_cart),
-                          onPressed: () {
-                            // Tambah ke cart
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${product.name} ditambahkan ke cart'),
-                              ),
-                            );
-                          },
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                // ===== SEARCH =====
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: const TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Cari produk...',
+                      border: InputBorder.none,
+                      icon: Icon(Icons.search),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // ===== PRODUK PER KATEGORI =====
+                ...categories.map((c) {
+                  final categoryProducts = products
+                      .where((p) => p.categoryId == c.id)
+                      .toList();
+
+                  if (categoryProducts.isEmpty) return const SizedBox();
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        c.name,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: primaryBlue,
                         ),
                       ),
-                    );
-                  },
-                ),
+                      const SizedBox(height: 8),
+
+                      ...categoryProducts.map(
+                        (p) => Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          child: ListTile(
+                            title: Text(p.name),
+                            subtitle: Text('Rp ${p.price} • Stok ${p.stock}'),
+                            trailing: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: teal,
+                              ),
+                              onPressed: () {
+                                Provider.of<CartProvider>(
+                                  context,
+                                  listen: false,
+                                ).add(p);
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '${p.name} ditambahkan ke keranjang',
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: const Text('Add'),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
+                  );
+                }).toList(),
+              ],
+            ),
+
+      // ================= BOTTOM NAV =================
+      bottomNavigationBar: BottomNavigationBar(
+        selectedItemColor: teal,
+        unselectedItemColor: Colors.grey,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Cart',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Akun',
+          ),
+        ],
+      ),
     );
   }
 }
