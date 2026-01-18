@@ -45,9 +45,9 @@ class AuthService {
   }
 
   // ================= SAVE USER =================
-  static Future<void> saveUser(int userId) async {
+  static Future<void> saveUser(dynamic userId) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('user_id', userId);
+    await prefs.setInt('user_id', int.parse(userId.toString()));
   }
 
   // ================= GET USER =================

@@ -5,7 +5,7 @@ class SessionService {
   static Future<void> saveUser(Map<String, dynamic> user) async {
     final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setInt('user_id', user['id']);
+    await prefs.setInt('user_id', int.parse(user['id'].toString()));
     await prefs.setString('user_name', user['name'] ?? '');
     await prefs.setString('user_email', user['email'] ?? '');
     await prefs.setString('user_role', user['role'] ?? '');
@@ -21,6 +21,12 @@ class SessionService {
   static Future<String?> getUserName() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('user_name');
+  }
+
+  // ================= AMBIL EMAIL USER =================
+  static Future<String?> getUserEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('user_email');
   }
 
   // ================= AMBIL ROLE USER =================

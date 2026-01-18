@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'approval_client.dart';
 import 'product_manage.dart';
 import 'order_manage.dart';
+import 'notification_screen.dart';
+import 'profile_screen.dart';
 import '../../services/order_service.dart';
 import 'widgets/dashboard_chart.dart';
 
@@ -38,189 +40,41 @@ class _HomeAdminState extends State<HomeAdmin> {
           ),
         ),
         actions: [
+          // ===== NOTIFICATION BUTTON =====
           IconButton(
-            icon: const Icon(Icons.logout, color: primaryBlue),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/login');
-            },
-          )
+            icon: const Icon(Icons.notifications, color: primaryBlue),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const NotificationScreen(),
+              ),
+            ),
+          ),
+          // ===== PROFILE BUTTON =====
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: const CircleAvatar(
+                radius: 16,
+                backgroundColor: teal,
+                child: Icon(
+                  Icons.person,
+                  color: Colors.white,
+                ),
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AdminProfileScreen(),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
 
       // ================= BODY =================
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-
-            // ===== HEADER =====
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [primaryBlue, Color(0xFF5F6FFF)],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Row(
-                children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.admin_panel_settings,
-                      size: 32,
-                      color: primaryBlue,
-                    ),
-                  ),
-                  SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Admin Supplify',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        'Kelola sistem & operasional',
-                        style: TextStyle(color: Colors.white70),
-                      ),
-                    ],
-                  )
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ===== RINGKASAN =====
-            const Text(
-              'Ringkasan Hari Ini',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: primaryBlue,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            FutureBuilder<Map<String, dynamic>>(
-              future: OrderService.getDashboard(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final data = snapshot.data!;
-                return Row(
-                  children: [
-                    _DashboardCard(
-                      title: 'Total Order',
-                      value: data['total_orders'].toString(),
-                      icon: Icons.shopping_cart,
-                      color: teal,
-                    ),
-                    const SizedBox(width: 12),
-                    _DashboardCard(
-                      title: 'Omzet',
-                      value: 'Rp ${data['omzet']}',
-                      icon: Icons.trending_up,
-                      color: Colors.green,
-                    ),
-                  ],
-                );
-              },
-            ),
-
-            const SizedBox(height: 28),
-
-            // ===== GRAFIK =====
-            const Text(
-              'Grafik Omzet',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: primaryBlue,
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Padding(
-                padding: EdgeInsets.all(16),
-                child: DashboardChart(
-                  omzetData: [2, 4, 3, 5, 6, 4, 7],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 28),
-
-            // ===== MENU =====
-            const Text(
-              'Menu Admin',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: primaryBlue,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              children: [
-                _AdminMenuGrid(
-                  icon: Icons.inventory_2,
-                  title: 'Kelola Produk',
-                  color: teal,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ProductManageScreen(),
-                    ),
-                  ),
-                ),
-                _AdminMenuGrid(
-                  icon: Icons.verified_user,
-                  title: 'Approval Client',
-                  color: Colors.indigo,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ApprovalClientScreen(),
-                    ),
-                  ),
-                ),
-                _AdminMenuGrid(
-                  icon: Icons.shopping_cart_checkout,
-                  title: 'Kelola Pesanan',
-                  color: primaryBlue,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const OrderManageScreen(),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
+      body: _buildPage(_currentIndex),
 
       // ================= BOTTOM NAV =================
       bottomNavigationBar: BottomNavigationBar(
@@ -244,6 +98,217 @@ class _HomeAdminState extends State<HomeAdmin> {
         ],
       ),
     );
+  }
+
+  Widget _buildPage(int index) {
+    switch (index) {
+      case 0:
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ===== HEADER =====
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [primaryBlue, Color(0xFF5F6FFF)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.admin_panel_settings,
+                        size: 32,
+                        color: primaryBlue,
+                      ),
+                    ),
+                    SizedBox(width: 16),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Admin Supplify',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Kelola sistem & operasional',
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ===== RINGKASAN =====
+              const Text(
+                'Ringkasan Hari Ini',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: primaryBlue,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              FutureBuilder<Map<String, dynamic>>(
+                future: OrderService.getDashboard(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final data = snapshot.data!;
+                  return Row(
+                    children: [
+                      _DashboardCard(
+                        title: 'Total Order',
+                        value: data['total_orders'].toString(),
+                        icon: Icons.shopping_cart,
+                        color: teal,
+                      ),
+                      const SizedBox(width: 12),
+                      _DashboardCard(
+                        title: 'Omzet',
+                        value: 'Rp ${data['omzet']}',
+                        icon: Icons.trending_up,
+                        color: Colors.green,
+                      ),
+                    ],
+                  );
+                },
+              ),
+
+              const SizedBox(height: 28),
+
+              // ===== GRAFIK =====
+              const Text(
+                'Grafik Omzet',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: primaryBlue,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: DashboardChart(
+                    omzetData: [2, 4, 3, 5, 6, 4, 7],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              // ===== MENU =====
+              const Text(
+                'Menu Admin',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: primaryBlue,
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                children: [
+                  _AdminMenuGrid(
+                    icon: Icons.inventory_2,
+                    title: 'Kelola Produk',
+                    color: teal,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ProductManageScreen(),
+                      ),
+                    ),
+                  ),
+                  _AdminMenuGrid(
+                    icon: Icons.verified_user,
+                    title: 'Approval Client',
+                    color: Colors.indigo,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ApprovalClientScreen(),
+                      ),
+                    ),
+                  ),
+                  _AdminMenuGrid(
+                    icon: Icons.shopping_cart_checkout,
+                    title: 'Kelola Pesanan',
+                    color: primaryBlue,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const OrderManageScreen(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      case 1:
+        return Scaffold(
+          backgroundColor: background,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            title: const Text(
+              'Notifikasi',
+              style: TextStyle(
+                color: primaryBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          body: const NotificationScreen(),
+        );
+      case 2:
+        return Scaffold(
+          backgroundColor: background,
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            title: const Text(
+              'Profil Saya',
+              style: TextStyle(
+                color: primaryBlue,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          body: const AdminProfileScreen(),
+        );
+      default:
+        return Container();
+    }
   }
 }
 
